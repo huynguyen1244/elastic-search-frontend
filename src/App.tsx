@@ -1,35 +1,33 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import Header from "./components/Header";
+import SearchPage from "./pages/SearchPage";
+import IndicesPage from "./pages/IndicesPage";
+import UploadPage from "./pages/UploadPage";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [activeTab, setActiveTab] = useState("search");
+
+  let pageContent;
+  switch (activeTab) {
+    case "search":
+      pageContent = <SearchPage />;
+      break;
+    case "indices":
+      pageContent = <IndicesPage />;
+      break;
+    case "upload":
+      pageContent = <UploadPage />;
+      break;
+    default:
+      pageContent = <SearchPage />;
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <main className="max-w-5xl mx-auto p-6">
+        <div className="space-y-6">{pageContent}</div>
+      </main>
+    </div>
+  );
 }
-
-export default App
