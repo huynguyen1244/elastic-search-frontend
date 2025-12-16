@@ -18,11 +18,11 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                 <div className="flex h-16 items-center justify-between">
                     {/* Logo Area */}
                     <div className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105" onClick={() => setActiveTab('search')}>
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-600 text-white shadow-lg shadow-primary-500/30">
                             <LayoutGrid size={20} strokeWidth={2.5} />
                         </div>
                         <span className="text-xl font-bold tracking-tight text-slate-800">
-                            Elastic<span className="text-blue-600">Search</span>
+                            Elastic<span className="text-primary-600">Search</span>
                         </span>
                     </div>
 
@@ -38,11 +38,11 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                                     className={`
                                         relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-300
                                         ${isActive
-                                            ? "bg-white text-blue-600 shadow-sm ring-1 ring-slate-200/50"
+                                            ? "bg-white text-primary-600 shadow-sm ring-1 ring-slate-200/50"
                                             : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"}
                                     `}
                                 >
-                                    <Icon size={16} strokeWidth={isActive ? 2.5 : 2} className={isActive ? "text-blue-600" : "text-slate-400"} />
+                                    <Icon size={16} strokeWidth={isActive ? 2.5 : 2} className={isActive ? "text-primary-600" : "text-slate-400"} />
                                     {tab.label}
                                 </button>
                             );

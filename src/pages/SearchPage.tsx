@@ -11,6 +11,8 @@ export default function SearchPage() {
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
 
+    const [lastQuery, setLastQuery] = useState("");
+
     const handleSearch = async (query: string) => {
         if (!query.trim()) return;
 
@@ -18,9 +20,7 @@ export default function SearchPage() {
             setLoading(true);
             setError(null);
             setHasSearched(true);
-
-            // Artificial delay for smoother UX (optional, remove if speed is critical)
-            // await new Promise(resolve => setTimeout(resolve, 300));
+            setLastQuery(query);
 
             const data = await searchElastic(query);
             setResults(data);
@@ -34,19 +34,20 @@ export default function SearchPage() {
     };
 
     const handleRefresh = async () => {
-        // In a real app, we might re-run the last search here
-        console.log("Refresh triggered");
+        if (lastQuery) {
+            await handleSearch(lastQuery);
+        }
     };
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header Section */}
             <div className="text-center space-y-4 py-8">
-                <div className="inline-flex items-center justify-center p-3 bg-blue-50 rounded-2xl mb-2">
-                    <Sparkles className="w-6 h-6 text-blue-600" />
+                <div className="inline-flex items-center justify-center p-3 bg-primary-50 rounded-2xl mb-2">
+                    <Sparkles className="w-6 h-6 text-primary-600" />
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
-                    Tìm kiếm Tài liệu
+                    Tìm kiếm Tin tức chiến tranh
                 </h1>
                 <p className="text-lg text-slate-500 max-w-2xl mx-auto">
                     Tra cứu nhanh chóng toàn bộ dữ liệu Elasticsearch với bộ lọc mạnh mẽ và kết quả tức thì.

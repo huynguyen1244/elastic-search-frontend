@@ -16,6 +16,11 @@ export default function IndicesPage() {
     const [creating, setCreating] = useState(false);
     const [deleting, setDeleting] = useState<string | null>(null);
 
+    // Advanced Create Modal State
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [indexSettings, setIndexSettings] = useState("");
+    const [indexMappings, setIndexMappings] = useState("");
+
     // Document Viewing State
     const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
     const [indexDocuments, setIndexDocuments] = useState<any[]>([]);
@@ -34,17 +39,39 @@ export default function IndicesPage() {
         }
     };
 
-    const handleCreateIndex = async () => {
+    const openCreateModal = () => {
         if (!newIndexName.trim()) return;
-        setCreating(true);
-        const success = await createIndex(newIndexName.trim());
-        if (success) {
-            setNewIndexName("");
-            fetchIndices();
-        } else {
-            alert("Tạo index thất bại");
+        setIndexSettings('{\n  "number_of_shards": 1,\n  "number_of_replicas": 1\n}');
+        setIndexMappings('{\n  "properties": {\n    "title": { "type": "text" },\n    "description": { "type": "text" }\n  }\n}');
+        setShowCreateModal(true);
+    };
+
+    const handleConfirmCreate = async () => {
+        try {
+            setCreating(true);
+            let settingsObj = undefined;
+            let mappingsObj = undefined;
+
+            if (indexSettings.trim()) {
+                settingsObj = JSON.parse(indexSettings);
+            }
+            if (indexMappings.trim()) {
+                mappingsObj = JSON.parse(indexMappings);
+            }
+
+            const success = await createIndex(newIndexName.trim(), settingsObj, mappingsObj);
+            if (success) {
+                setNewIndexName("");
+                setShowCreateModal(false);
+                fetchIndices();
+            } else {
+                alert("Tạo index thất bại. Vui lòng kiểm tra console.");
+            }
+        } catch (err) {
+            alert("Lỗi cú pháp JSON! Vui lòng kiểm tra lại Settings hoặc Mappings.");
+        } finally {
+            setCreating(false);
         }
-        setCreating(false);
     };
 
     const handleDeleteIndex = async (index: string, e: React.MouseEvent) => {
@@ -88,8 +115,8 @@ export default function IndicesPage() {
             {/* Header / Actions */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                    <div className="p-3 bg-blue-50 rounded-xl">
-                        <Database className="w-6 h-6 text-blue-600" />
+                    <div className="p-3 bg-primary-50 rounded-xl">
+                        <Database className="w-6 h-6 text-primary-600" />
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-slate-800">Quản lý Index</h2>
@@ -104,13 +131,13 @@ export default function IndicesPage() {
                             placeholder="New index name..."
                             value={newIndexName}
                             onChange={(e) => setNewIndexName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleCreateIndex()}
-                            className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
+                            onKeyDown={(e) => e.key === 'Enter' && openCreateModal()}
+                            className="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-100 focus:border-primary-400 transition-all outline-none"
                         />
                         <button
-                            onClick={handleCreateIndex}
+                            onClick={openCreateModal}
                             disabled={creating || !newIndexName.trim()}
-                            className="absolute right-1.5 top-1.5 p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:bg-slate-300"
+                            className="absolute right-1.5 top-1.5 p-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:bg-slate-300"
                         >
                             <Plus className="w-4 h-4" />
                         </button>
@@ -131,7 +158,7 @@ export default function IndicesPage() {
             <div className="min-h-[300px]">
                 {loading && indices.length === 0 ? (
                     <div className="flex items-center justify-center h-64">
-                        <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
+                        <RefreshCw className="w-8 h-8 text-primary-500 animate-spin" />
                     </div>
                 ) : error ? (
                     <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-red-700 flex items-center gap-2">
@@ -150,11 +177,11 @@ export default function IndicesPage() {
                             <div
                                 key={idx}
                                 onClick={() => handleIndexClick(idx)}
-                                className="group relative bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 cursor-pointer"
+                                className="group relative bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-primary-200 transition-all duration-300 cursor-pointer"
                                 style={{ animationDelay: `${i * 100}ms` }}
                             >
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-full flex items-center justify-center text-blue-600">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-primary-50 to-indigo-50 rounded-full flex items-center justify-center text-primary-600">
                                         <Database className="w-5 h-5" />
                                     </div>
                                     <button
@@ -172,7 +199,7 @@ export default function IndicesPage() {
                                 <h3 className="font-bold text-slate-800 text-lg mb-1 truncate" title={idx}>{idx}</h3>
                                 <p className="text-xs text-slate-400 font-mono">Bấm để xem tài liệu</p>
 
-                                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-b-2xl"></div>
+                                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-primary-500 to-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-b-2xl"></div>
                             </div>
                         ))}
                     </div>
@@ -186,7 +213,7 @@ export default function IndicesPage() {
                         {/* Modal Header */}
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-100/50 rounded-lg text-blue-600">
+                                <div className="p-2 bg-primary-100/50 rounded-lg text-primary-600">
                                     <FileText className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -209,6 +236,55 @@ export default function IndicesPage() {
                                 onRefresh={handleRefreshDocs}
                                 loading={loadingDocs}
                             />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Index Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <h3 className="text-lg font-bold text-slate-800">Tạo Index mới: {newIndexName}</h3>
+                            <button onClick={() => setShowCreateModal(false)} className="text-slate-500 hover:text-red-500">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-slate-700">Settings (JSON)</label>
+                                <textarea
+                                    className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:ring-2 focus:ring-primary-100 outline-none"
+                                    value={indexSettings}
+                                    onChange={(e) => setIndexSettings(e.target.value)}
+                                    placeholder="{}"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-slate-700">Mappings (JSON)</label>
+                                <textarea
+                                    className="w-full h-48 p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs focus:ring-2 focus:ring-primary-100 outline-none"
+                                    value={indexMappings}
+                                    onChange={(e) => setIndexMappings(e.target.value)}
+                                    placeholder="{}"
+                                />
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowCreateModal(false)}
+                                className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-200 rounded-lg transition-colors"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleConfirmCreate}
+                                disabled={creating}
+                                className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:bg-primary-300"
+                            >
+                                {creating ? "Đang tạo..." : "Xác nhận tạo"}
+                            </button>
                         </div>
                     </div>
                 </div>

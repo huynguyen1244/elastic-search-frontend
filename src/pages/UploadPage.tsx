@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { indexDocument, getIndices } from "../services/api";
+import { indexDocument, getIndices, bulkIndexDocuments } from "../services/api";
 import { Upload, CheckCircle, XCircle, AlertCircle, Database, Hash, Braces, ChevronDown } from "lucide-react";
 
 export default function UploadPage() {
@@ -23,8 +23,8 @@ export default function UploadPage() {
     }, []);
 
     const handleUpload = async () => {
-        if (!index || !id || !content) {
-            setStatus({ type: "warning", message: "Vui lòng điền đầy đủ thông tin" });
+        if (!index || !content) {
+            setStatus({ type: "warning", message: "Vui lòng điền tên Index và nội dung JSON" });
             return;
         }
 
@@ -32,16 +32,55 @@ export default function UploadPage() {
             setLoading(true);
             setStatus({ type: null, message: "" });
 
-            const parsedContent = JSON.parse(content);
-            const success = await indexDocument(index, id, parsedContent);
+            let parsedContent;
+
+            // Try parsing standard JSON first
+            try {
+                parsedContent = JSON.parse(content);
+            } catch (initialErr) {
+                // If not standard JSON, try to handle multiple objects concatenated
+                // Logic: Replace "whitespace } whitespace { whitespace" with "},{", then wrap in []
+                const fixedContent = `[${content.replace(/}\s*{/g, "},{")}]`;
+                try {
+                    parsedContent = JSON.parse(fixedContent);
+                } catch (retryErr) {
+                    // Throw original error if retry fails to show syntax error
+                    throw initialErr;
+                }
+            }
+
+            let success = false;
+
+            if (Array.isArray(parsedContent)) {
+                // Bulk upload
+                // Import lazily or assumes it's available. 
+                // Note: We need to import bulkIndexDocuments at the top of the file, checking next tool call.
+                success = await bulkIndexDocuments(index, parsedContent);
+                if (success) {
+                    setStatus({ type: "success", message: `Đã tải lên ${parsedContent.length} tài liệu thành công!` });
+                }
+            } else {
+                // Single upload
+                if (!id) {
+                    setStatus({ type: "warning", message: "Vui lòng nhập ID cho tài liệu đơn lẻ" });
+                    setLoading(false);
+                    return;
+                }
+                success = await indexDocument(index, id, parsedContent);
+                if (success) {
+                    setStatus({ type: "success", message: "Tải lên tin tức chiến tranh thành công!" });
+                }
+            }
 
             if (success) {
-                setStatus({ type: "success", message: "Tải lên tài liệu thành công!" });
                 setIndex("");
                 setId("");
                 setContent("");
             } else {
-                setStatus({ type: "error", message: "Tải lên thất bại. Vui lòng thử lại." });
+                // If success is false but no specific error was caught
+                if (status.type !== 'error') {
+                    setStatus({ type: "error", message: "Có lỗi xảy ra trong quá trình tải lên." });
+                }
             }
         } catch (err) {
             if (err instanceof SyntaxError) {
@@ -64,7 +103,7 @@ export default function UploadPage() {
     return (
         <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-slate-800">Tải lên Tài liệu</h2>
+                <h2 className="text-3xl font-bold text-slate-800">Tải lên Tin tức chiến tranh</h2>
                 <p className="text-slate-500 mt-2">Thêm dữ liệu mới vào Elasticsearch</p>
             </div>
 
@@ -95,7 +134,7 @@ export default function UploadPage() {
                                 <input
                                     type="text"
                                     placeholder="ví dụ: products"
-                                    className="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
+                                    className="w-full pl-11 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-100 focus:border-primary-500 transition-all outline-none"
                                     value={index}
                                     onChange={(e) => {
                                         setIndex(e.target.value);
@@ -146,7 +185,7 @@ export default function UploadPage() {
                                 <input
                                     type="text"
                                     placeholder="ví dụ: prod-123"
-                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
+                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-100 focus:border-primary-500 transition-all outline-none"
                                     value={id}
                                     onChange={(e) => setId(e.target.value)}
                                     disabled={loading}
@@ -162,10 +201,10 @@ export default function UploadPage() {
                             <span className="text-xs text-slate-400 font-mono bg-slate-100 px-2 py-0.5 rounded">application/json</span>
                         </div>
                         <div className="relative group">
-                            <Braces className="absolute left-3.5 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                            <Braces className="absolute left-3.5 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
                             <textarea
                                 placeholder='{ "title": "My Document", ... }'
-                                className="w-full pl-11 pr-4 py-3 min-h-[200px] bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none font-mono text-sm resize-y"
+                                className="w-full pl-11 pr-4 py-3 min-h-[200px] bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-100 focus:border-primary-500 transition-all outline-none font-mono text-sm resize-y"
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 disabled={loading}
@@ -186,10 +225,10 @@ export default function UploadPage() {
                             onClick={handleUpload}
                             disabled={loading}
                             className={`
-                                flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium shadow-lg shadow-blue-500/20 transition-all
+                                flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium shadow-lg shadow-primary-500/20 transition-all
                                 ${loading
-                                    ? 'bg-blue-400 cursor-not-allowed'
-                                    : 'bg-blue-600 hover:bg-blue-700 hover:-translate-y-0.5'}
+                                    ? 'bg-primary-400 cursor-not-allowed'
+                                    : 'bg-primary-600 hover:bg-primary-700 hover:-translate-y-0.5'}
                             `}
                         >
                             {loading ? (

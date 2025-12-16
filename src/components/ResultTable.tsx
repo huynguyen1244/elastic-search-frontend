@@ -36,7 +36,7 @@ export default function ResultTable({ results, onRefresh, loading = false }: Res
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-500">
-                <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+                <Loader2 className="w-12 h-12 text-primary-500 animate-spin mb-4" />
                 <p className="text-slate-500 font-medium">Đang tải kết quả...</p>
             </div>
         );
@@ -59,9 +59,9 @@ export default function ResultTable({ results, onRefresh, loading = false }: Res
             {/* Table Header */}
             <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                    <Database className="w-4 h-4 text-blue-500" />
+                    <Database className="w-4 h-4 text-primary-500" />
                     Kết quả tìm kiếm
-                    <span className="bg-blue-100 text-blue-700 text-xs py-0.5 px-2 rounded-full ml-2">
+                    <span className="bg-primary-100 text-primary-700 text-xs py-0.5 px-2 rounded-full ml-2">
                         {results.length}
                     </span>
                 </h3>

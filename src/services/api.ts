@@ -1,4 +1,16 @@
 const BASE_URL = (import.meta.env.VITE_ELASTIC_API || "http://localhost:9200").replace(/\/$/, "");
+const USERNAME = import.meta.env.VITE_ELASTIC_USERNAME;
+const PASSWORD = import.meta.env.VITE_ELASTIC_PASSWORD;
+
+const getHeaders = (contentType = "application/json") => {
+    const headers: Record<string, string> = {
+        "Content-Type": contentType,
+    };
+    if (USERNAME && PASSWORD) {
+        headers["Authorization"] = "Basic " + btoa(USERNAME + ":" + PASSWORD);
+    }
+    return headers;
+};
 
 // Helper to handle response errors
 const handleResponse = async (res: Response) => {
@@ -26,7 +38,7 @@ export const searchElastic = async (query: string, index?: string) => {
         const url = index ? `${BASE_URL}/${index}/_search` : `${BASE_URL}/_search`;
         const res = await fetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: getHeaders(),
             body: JSON.stringify({
                 query: {
                     multi_match: {
@@ -50,7 +62,9 @@ export const searchElastic = async (query: string, index?: string) => {
 // 2️⃣ Get all indices
 export const getIndices = async (): Promise<string[]> => {
     try {
-        const res = await fetch(`${BASE_URL}/_cat/indices?format=json`);
+        const res = await fetch(`${BASE_URL}/_cat/indices?format=json`, {
+            headers: getHeaders()
+        });
         // _cat APIs might return 404 if no indices? Usually returns empty list.
         if (!res.ok) return [];
         const data = await res.json();
@@ -67,7 +81,7 @@ export const countDocuments = async (): Promise<number> => {
     try {
         const res = await fetch(`${BASE_URL}/_count`, {
             method: "GET",
-            headers: { "Content-Type": "application/json" },
+            headers: getHeaders(),
         });
         const data = await res.json();
         return typeof data.count === "number" ? data.count : 0;
@@ -99,7 +113,7 @@ export const indexDocument = async (...args: any[]) => {
     try {
         const res = await fetch(`${BASE_URL}/${index}/_doc/${id}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: getHeaders(),
             body: JSON.stringify(doc),
         });
 
@@ -116,6 +130,7 @@ export const deleteDocument = async (index: string, id: string) => {
     try {
         const res = await fetch(`${BASE_URL}/${index}/_doc/${id}`, {
             method: "DELETE",
+            headers: getHeaders(),
         });
         await handleResponse(res);
         return true;
@@ -138,7 +153,7 @@ export const createIndex = async (
 
         const res = await fetch(`${BASE_URL}/${index}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: getHeaders(),
             body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
         });
 
@@ -155,6 +170,7 @@ export const deleteIndex = async (index: string): Promise<boolean> => {
     try {
         const res = await fetch(`${BASE_URL}/${index}`, {
             method: "DELETE",
+            headers: getHeaders(),
         });
         await handleResponse(res);
         return true;
@@ -169,6 +185,7 @@ export const getIndexDetails = async (index: string): Promise<any> => {
     try {
         const res = await fetch(`${BASE_URL}/${index}`, {
             method: "GET",
+            headers: getHeaders(),
         });
         const data = await handleResponse(res);
         return data[index] || null;
@@ -183,7 +200,7 @@ export const getDocumentsByIndex = async (index: string) => {
     try {
         const res = await fetch(`${BASE_URL}/${index}/_search`, {
             method: "POST", // search uses POST
-            headers: { "Content-Type": "application/json" },
+            headers: getHeaders(),
             body: JSON.stringify({
                 query: { match_all: {} },
                 size: 100 // Limit to 100 docs for overview
@@ -196,3 +213,43 @@ export const getDocumentsByIndex = async (index: string) => {
         throw error;
     }
 };
+
+// 10️⃣ Bulk index documents (create/update multiple)
+export const bulkIndexDocuments = async (index: string, docs: any[]) => {
+    try {
+        // Transform to NDJSON format required by Elasticsearch _bulk API
+        // { "index": { "_index": "test", "_id": "1" } }
+        // { "field1": "value1" }
+        const bodyLines: string[] = [];
+
+        docs.forEach(doc => {
+            // Extract ID if present, otherwise let Elastic generate it
+            const action: any = { index: { _index: index } };
+            if (doc.id) {
+                action.index._id = doc.id;
+            } else if (doc._id) {
+                action.index._id = doc._id;
+            }
+
+            bodyLines.push(JSON.stringify(action));
+            bodyLines.push(JSON.stringify(doc));
+        });
+
+        // NDJSON must end with a newline
+        bodyLines.push("");
+        const body = bodyLines.join("\n");
+
+        const res = await fetch(`${BASE_URL}/_bulk`, {
+            method: "POST",
+            headers: getHeaders("application/x-ndjson"),
+            body: body,
+        });
+
+        const data = await handleResponse(res);
+        return !data.errors; // Returns true if no errors
+    } catch (error) {
+        console.error("bulkIndexDocuments error:", error);
+        return false;
+    }
+};
+

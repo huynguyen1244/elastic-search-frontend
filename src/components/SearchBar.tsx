@@ -21,16 +21,16 @@ export default function SearchBar({ onSearch, loading }: SearchBarProps) {
         `}>
             {/* Glow Effect */}
             <div className={`
-                absolute -inset-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-2xl opacity-0 blur-lg transition duration-500
+                absolute -inset-1 bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500 rounded-2xl opacity-0 blur-lg transition duration-500
                 ${isFocused ? 'opacity-30' : 'group-hover:opacity-10'}
             `}></div>
 
             <div className={`
                 relative flex items-center bg-white rounded-2xl shadow-xl transition-all duration-300 border
-                ${isFocused ? 'border-blue-200 ring-4 ring-blue-500/10' : 'border-slate-100'}
+                ${isFocused ? 'border-primary-200 ring-4 ring-primary-500/10' : 'border-slate-100'}
             `}>
                 <div className="pl-6 text-slate-400">
-                    <Search className={`w-6 h-6 transition-all duration-300 ${isFocused ? 'text-blue-500' : ''}`} />
+                    <Search className={`w-6 h-6 transition-all duration-300 ${isFocused ? 'text-primary-500' : ''}`} />
                 </div>
 
                 <input
@@ -63,7 +63,7 @@ export default function SearchBar({ onSearch, loading }: SearchBarProps) {
                         m-2 px-8 py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-300
                         ${!query.trim() || loading
                             ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
-                            : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0'}
+                            : 'bg-gradient-to-r from-primary-600 to-indigo-600 hover:shadow-primary-500/30 hover:-translate-y-0.5 active:translate-y-0'}
                     `}
                 >
                     {loading ? (
