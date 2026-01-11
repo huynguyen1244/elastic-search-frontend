@@ -1,4 +1,5 @@
-import { X, Loader2, FileQuestion, TrendingUp, Hash, Calculator, ChevronRight } from "lucide-react";
+import { X, Loader2, FileQuestion, TrendingUp, Hash, Calculator, ChevronRight, ChevronDown } from "lucide-react";
+import { useState } from "react";
 
 type ExplanationNode = {
     value: number;
@@ -17,16 +18,23 @@ type ExplainModalProps = {
 };
 
 function ExplanationTree({ node, depth = 0 }: { node: ExplanationNode; depth?: number }) {
+    const [isExpanded, setIsExpanded] = useState(depth < 2);
     const hasDetails = node.details && node.details.length > 0;
 
     return (
         <div className={`${depth > 0 ? "ml-4 pl-4 border-l-2 border-slate-200" : ""}`}>
-            <div className="flex items-start gap-2 py-2 group">
+            <div
+                className={`flex items-start gap-2 py-2 group ${hasDetails ? 'cursor-pointer hover:bg-slate-50 rounded-lg -ml-2 pl-2' : ''}`}
+                onClick={() => hasDetails && setIsExpanded(!isExpanded)}
+            >
                 {hasDetails && (
-                    <ChevronRight className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                    isExpanded
+                        ? <ChevronDown className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                        : <ChevronRight className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
                 )}
+                {!hasDetails && <div className="w-4" />}
                 <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-sm font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded">
                             {node.value.toFixed(4)}
                         </span>
@@ -35,7 +43,7 @@ function ExplanationTree({ node, depth = 0 }: { node: ExplanationNode; depth?: n
                 </div>
             </div>
 
-            {hasDetails && (
+            {hasDetails && isExpanded && (
                 <div className="space-y-1">
                     {node.details!.map((detail, idx) => (
                         <ExplanationTree key={idx} node={detail} depth={depth + 1} />
@@ -67,8 +75,8 @@ export default function ExplainModal({
                             <Calculator className="w-5 h-5 text-primary-600" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-slate-800">Giải thích Cơ chế Xếp hạng</h3>
-                            <p className="text-xs text-slate-500">Elasticsearch BM25 Scoring Algorithm</p>
+                            <h3 className="text-lg font-bold text-slate-800">Giải thích Điểm xếp hạng</h3>
+                            <p className="text-xs text-slate-500">Thuật toán BM25 của Elasticsearch</p>
                         </div>
                     </div>
                     <button
@@ -84,21 +92,21 @@ export default function ExplainModal({
                     <div className="flex items-center gap-2">
                         <Hash className="w-4 h-4 text-slate-400" />
                         <div>
-                            <p className="text-xs text-slate-400">Document ID</p>
-                            <p className="text-sm font-mono text-slate-700 truncate" title={docId}>{docId}</p>
+                            <p className="text-xs text-slate-400">Mã tài liệu</p>
+                            <p className="text-sm font-mono text-slate-700 truncate" title={docId}>{docId.slice(0, 12)}...</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <FileQuestion className="w-4 h-4 text-slate-400" />
                         <div>
-                            <p className="text-xs text-slate-400">Query</p>
+                            <p className="text-xs text-slate-400">Từ khóa tìm</p>
                             <p className="text-sm font-medium text-slate-700 truncate" title={query}>"{query}"</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-emerald-500" />
                         <div>
-                            <p className="text-xs text-slate-400">Final Score</p>
+                            <p className="text-xs text-slate-400">Điểm cuối cùng</p>
                             <p className="text-sm font-bold text-emerald-600">{score.toFixed(4)}</p>
                         </div>
                     </div>
@@ -112,25 +120,141 @@ export default function ExplainModal({
                             <p className="text-slate-500">Đang phân tích điểm số...</p>
                         </div>
                     ) : explanation ? (
-                        <div className="space-y-4">
-                            {/* BM25 Explanation */}
-                            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-4 border border-indigo-100">
-                                <h4 className="font-semibold text-indigo-800 mb-2">Thuật toán BM25</h4>
-                                <p className="text-sm text-indigo-700 leading-relaxed">
-                                    Elasticsearch sử dụng thuật toán <strong>BM25 (Best Match 25)</strong> để tính điểm xếp hạng.
-                                    Điểm số được tính dựa trên:
+                        <div className="space-y-6">
+                            {/* Your Algorithm Explanation */}
+                            <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl p-5 border border-violet-200">
+                                <h4 className="font-semibold text-violet-800 mb-3">
+                                    Thuật toán tính điểm tìm kiếm
+                                </h4>
+
+                                {/* Main Formula */}
+                                <div className="bg-white rounded-xl p-4 border border-violet-200 mb-4">
+                                    <div className="text-center font-mono">
+                                        <div className="text-lg text-slate-700 mb-2">
+                                            <span className="text-violet-600 font-bold">Điểm cuối cùng</span> = ∑(điểm₁ + điểm₂ + điểm₃ + điểm₄)
+                                        </div>
+                                        <div className="text-sm text-slate-500">
+                                            trong đó mỗi điểmᵢ = BM25(query, doc) × boost × field_weight
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p className="text-sm text-violet-700 mb-4">
+                                    Thuật toán sử dụng 4 loại tìm kiếm với độ ưu tiên khác nhau. Elasticsearch tính tổng điểm của tất cả các điều kiện match.
                                 </p>
-                                <ul className="mt-2 text-sm text-indigo-600 space-y-1 ml-4">
-                                    <li>• <strong>TF (Term Frequency)</strong>: Tần suất xuất hiện của từ khóa trong document</li>
-                                    <li>• <strong>IDF (Inverse Document Frequency)</strong>: Độ hiếm của từ khóa trong toàn bộ index</li>
-                                    <li>• <strong>Field Length</strong>: Độ dài của field (field ngắn hơn được ưu tiên)</li>
-                                    <li>• <strong>Field Boost</strong>: Trọng số của từng field</li>
-                                </ul>
+                            </div>
+
+                            {/* 4 Priority Levels */}
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-slate-800">4 mức độ ưu tiên tìm kiếm</h4>
+
+                                {/* Priority 1 - Phrase Match */}
+                                <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl p-4 border border-rose-200">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="font-semibold text-rose-700">1. Phrase Match (Cụm từ)</span>
+                                        <span className="font-mono bg-rose-100 text-rose-700 px-2 py-1 rounded text-sm">boost = 15</span>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-3 font-mono text-sm mb-2">
+                                        <span className="text-slate-600">điểm = BM25 × </span>
+                                        <span className="text-rose-600 font-bold">15</span>
+                                        <span className="text-slate-600"> × (title×10 + body×2)</span>
+                                    </div>
+                                    <p className="text-xs text-rose-600">
+                                        Match cả cụm từ liên tiếp, cho phép slop=2 (2 từ chen giữa)
+                                    </p>
+                                </div>
+
+                                {/* Priority 2 - Exact Vietnamese */}
+                                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-200">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="font-semibold text-indigo-700">2. Match có dấu chính xác</span>
+                                        <span className="font-mono bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-sm">boost = 10</span>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-3 font-mono text-sm mb-2">
+                                        <span className="text-slate-600">điểm = BM25 × </span>
+                                        <span className="text-indigo-600 font-bold">10</span>
+                                        <span className="text-slate-600"> × (title×5 + body×1)</span>
+                                    </div>
+                                    <p className="text-xs text-indigo-600">
+                                        Tìm từ khóa có dấu tiếng Việt chính xác như nhập vào
+                                    </p>
+                                </div>
+
+                                {/* Priority 3 - No Accent */}
+                                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="font-semibold text-amber-700">3. Match không dấu</span>
+                                        <span className="font-mono bg-amber-100 text-amber-700 px-2 py-1 rounded text-sm">boost = 7.5</span>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-3 font-mono text-sm mb-2">
+                                        <span className="text-slate-600">điểm = BM25 × </span>
+                                        <span className="text-amber-600 font-bold">7.5</span>
+                                        <span className="text-slate-600"> × (title.no_accent×5 + body.no_accent×1)</span>
+                                    </div>
+                                    <p className="text-xs text-amber-600">
+                                        Sử dụng ASCII folding: "chiến tranh" → "chien tranh"
+                                    </p>
+                                </div>
+
+                                {/* Priority 4 - Fuzzy */}
+                                <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-xl p-4 border border-slate-200">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="font-semibold text-slate-700">4. Fuzzy Match (Sai chính tả)</span>
+                                        <span className="font-mono bg-slate-200 text-slate-700 px-2 py-1 rounded text-sm">boost = 2</span>
+                                    </div>
+                                    <div className="bg-white rounded-lg p-3 font-mono text-sm mb-2">
+                                        <span className="text-slate-600">điểm = BM25 × </span>
+                                        <span className="text-slate-600 font-bold">2</span>
+                                        <span className="text-slate-600"> × (title×5 + body×1)</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500">
+                                        fuzziness="AUTO": cho phép sai 1-2 ký tự tùy độ dài từ
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* BM25 Base Formula */}
+                            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-200">
+                                <h4 className="font-semibold text-emerald-800 mb-3">
+                                    Công thức BM25 cơ bản
+                                </h4>
+
+                                <div className="bg-white rounded-xl p-4 border border-emerald-200 mb-4 overflow-x-auto">
+                                    <div className="text-center font-mono text-base">
+                                        <div className="inline-flex items-center gap-1 flex-wrap justify-center">
+                                            <span className="text-slate-700">BM25 = </span>
+                                            <span className="text-emerald-600">∑</span>
+                                            <span className="text-slate-500 text-sm">(từng từ)</span>
+                                            <span className="text-indigo-600 mx-1">IDF</span>
+                                            <span className="text-slate-500">×</span>
+                                            <div className="inline-flex flex-col items-center mx-1">
+                                                <span className="border-b border-slate-400 px-2 text-emerald-600">TF × 2.2</span>
+                                                <span className="px-2 text-amber-600">TF + 1.2 × norm</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div className="bg-white/70 rounded-lg p-3">
+                                        <div className="font-medium text-emerald-700 mb-1">IDF = log(1 + (N-n+0.5)/(n+0.5))</div>
+                                        <p className="text-xs text-emerald-600">
+                                            Từ càng hiếm → IDF càng cao
+                                        </p>
+                                    </div>
+                                    <div className="bg-white/70 rounded-lg p-3">
+                                        <div className="font-medium text-emerald-700 mb-1">TF = √(số lần xuất hiện)</div>
+                                        <p className="text-xs text-emerald-600">
+                                            Xuất hiện nhiều → TF cao (nhưng giảm dần)
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Explanation Tree */}
                             <div className="border border-slate-200 rounded-2xl p-4">
-                                <h4 className="font-semibold text-slate-800 mb-3">🔍 Chi tiết tính điểm</h4>
+                                <h4 className="font-semibold text-slate-800 mb-3">Chi tiết từ Elasticsearch</h4>
+                                <p className="text-xs text-slate-500 mb-3">Click vào các mục để mở rộng/thu gọn</p>
                                 <ExplanationTree node={explanation} />
                             </div>
                         </div>
